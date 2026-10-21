@@ -36,7 +36,7 @@ main{margin-top:-64px;padding-bottom:72px}
 .panel{display:none}
 .panel.show{display:block;animation:fade .35s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.calendly-inline-widget{min-width:320px;height:700px}
+.cal-embed{min-width:320px;height:720px;overflow:auto}
 .pay{padding:48px 28px;text-align:center;max-width:560px;margin:0 auto}
 .pay .tick{width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;margin:0 auto 18px;font-size:28px}
 .pay h2{font-family:Actor,Inter,sans-serif;font-weight:400;font-size:1.8rem;margin:0 0 8px;color:var(--navy)}
@@ -49,7 +49,7 @@ main{margin-top:-64px;padding-bottom:72px}
 .note{margin:18px 0 0;font-size:.85rem;color:var(--muted)}
 .setup{margin:20px;padding:14px 18px;border:1px dashed #e0a100;background:#fff9e6;border-radius:12px;font-size:.9rem;color:#6b5200;display:none}
 footer{text-align:center;color:var(--muted);font-size:.85rem;padding:24px}
-@media(max-width:640px){.hero{padding:40px 0 84px}.calendly-inline-widget{height:780px}}
+@media(max-width:640px){.hero{padding:40px 0 84px}.cal-embed{height:800px}}
 </style>
 </head>
 <body>
@@ -79,7 +79,7 @@ footer{text-align:center;color:var(--muted);font-size:.85rem;padding:24px}
 
       <!-- Step 1: Calendly -->
       <section class="panel show" id="p1">
-        <div class="calendly-inline-widget" id="cal"></div>
+        <div id="cal" class="cal-embed"></div>
       </section>
 
       <!-- Step 2: LawPay -->
@@ -100,21 +100,19 @@ footer{text-align:center;color:var(--muted);font-size:.85rem;padding:24px}
 <footer>© Artists &amp; Entrepreneurs</footer>
 
 <script>
-/* ============ SETTINGS: edit these two lines ============
-   CALENDLY_URL : your event link from calendly.com (e.g. https://calendly.com/your-name/consultation)
-   LAWPAY_URL   : your LawPay payment page / link (from your LawPay dashboard)
-========================================================= */
-const CALENDLY_URL = "";
-const LAWPAY_URL   = "";
+/* ============ SETTINGS ============
+   CAL_LINK   : your Cal.com booking link
+   LAWPAY_URL : your LawPay payment page / link (from your LawPay dashboard)
+================================== */
+const CAL_LINK   = "david-raleche-ffhwoq/30min";
+const LAWPAY_URL = "";
 
 const $ = id => document.getElementById(id);
-const missing = [];
-if(!CALENDLY_URL) missing.push("CALENDLY_URL");
-if(!LAWPAY_URL)   missing.push("LAWPAY_URL");
-if(missing.length){
+if(!LAWPAY_URL){
   const s=$("setup"); s.style.display="block";
-  s.textContent="Setup needed: add "+missing.join(" and ")+" in book/index.html.";
+  s.textContent="Setup needed: add LAWPAY_URL in book/index.html so the Pay button works.";
 }
+$("payBtn").href = LAWPAY_URL || "#";
 
 function goPay(){
   $("p1").classList.remove("show"); $("p2").classList.add("show");
@@ -122,23 +120,19 @@ function goPay(){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
-$("payBtn").href = LAWPAY_URL || "#";
-
-if(CALENDLY_URL){
-  const q = "hide_gdpr_banner=1&primary_color=2ea3f2&text_color=1b2430";
-  $("cal").setAttribute("data-url", CALENDLY_URL + (CALENDLY_URL.includes("?")?"&":"?") + q);
-  const sc=document.createElement("script");
-  sc.src="https://assets.calendly.com/assets/external/widget.js"; sc.async=true;
-  document.body.appendChild(sc);
-  $("cal").classList.add("calendly-inline-widget");
-}else{
-  $("cal").innerHTML='<div style="padding:80px 20px;text-align:center;color:#64707f">The scheduling calendar will appear here.</div>';
-}
-
-/* Calendly tells the page when a time has been booked → move to payment */
-window.addEventListener("message", e=>{
-  if(e.origin==="https://calendly.com" && e.data && e.data.event==="calendly.event_scheduled") goPay();
+/* Cal.com inline embed */
+(function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if(typeof namespace === "string"){cal.ns[namespace] = cal.ns[namespace] || api;p(cal.ns[namespace], ar);p(cal, ["initNamespace", namespace]);} else p(cal, ar); return;} p(cal, ar); }; })(window, "https://app.cal.com/embed/embed.js", "init");
+Cal("init", "30min", {origin:"https://app.cal.com"});
+Cal.config = Cal.config || {};
+Cal.config.forwardQueryParams = true;
+Cal.ns["30min"]("inline", {
+  elementOrSelector:"#cal",
+  config: {"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"light"},
+  calLink: CAL_LINK,
 });
+Cal.ns["30min"]("ui", {"theme":"light","hideEventTypeDetails":false,"layout":"month_view","cssVarsPerTheme":{"light":{"cal-brand":"#1f3a5f"}}});
+/* when a time is booked, move to the payment step */
+Cal.ns["30min"]("on", {action:"bookingSuccessful", callback:goPay});
 </script>
 </body>
 </html>
